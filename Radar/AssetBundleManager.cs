@@ -17,6 +17,8 @@ namespace Radar
         public static Sprite[] LootBlips { get; private set; } = new Sprite[3];
         public static Sprite[] BTRBlips { get; private set; } = new Sprite[3];
         public static Sprite[] MineBlips { get; private set; } = new Sprite[3];
+        public static Sprite[] ExfiltractionBlips { get; private set; } = new Sprite[3];
+
 
         internal static bool Loaded { get; private set; } = false;
 
@@ -125,6 +127,10 @@ namespace Radar
                 MineBlips[0] = LoadPngFromResource("Radar.bundle.mine.png");
                 MineBlips[1] = LoadPngFromResource("Radar.bundle.mine_up.png");
                 MineBlips[2] = LoadPngFromResource("Radar.bundle.mine_down.png");
+
+                ExfiltractionBlips[0] = LoadPngFromResource("Radar.bundle.exfiltraction.png");
+                ExfiltractionBlips[1] = LoadPngFromResource("Radar.bundle.exfiltraction_up.png");
+                ExfiltractionBlips[2] = LoadPngFromResource("Radar.bundle.exfiltraction_down.png");
 
                 Radar.Log.LogInfo("Assets loaded from folder!");
                 Loaded = true;

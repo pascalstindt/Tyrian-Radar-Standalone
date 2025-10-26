@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using System;
 using SPT.Reflection.Utils;
 using System.Reflection;
+using System.Security.Policy;
 
 namespace Radar
 {
@@ -59,6 +60,8 @@ namespace Radar
 
         private readonly List<BlipOther> _mineObject = new List<BlipOther>();
         private readonly List<RadarRegion> _mineRegion = new List<RadarRegion>();
+
+        private readonly List<BlipOther> _exfiltrationObject = new List<BlipOther>();
 
         private readonly HashSet<string> _containerSet = new HashSet<string>();
 
@@ -143,6 +146,49 @@ namespace Radar
                 UpdateLootList();
 
             UpdateMineList();
+            UpdateExfiltrationPointList();
+        }
+
+        private void UpdateExfiltrationPointList()
+        {
+            foreach (var obj in _exfiltrationObject)
+            {
+                if (obj != null)
+                {
+                    obj.DestroyBlip();
+                }
+            }
+            _exfiltrationObject.Clear();
+
+            if (!Radar.radarEnableExfilConfig.Value)
+            {
+                return;
+            }
+
+            var zones = LocationScene.GetAllObjects<ExfiltrationPoint>().ToArray();
+            foreach (var zone in zones)
+            {
+                Debug.LogError($"EXFIL: {zone.Status} {zone.Settings.Name} {zone.InfiltrationMatch(_player)} {zone.transform.position} {_player.Transform.position}");
+                BlipOther? blip = null;
+                if (zone.InfiltrationMatch(_player))
+                {
+                    blip = new BlipOther(zone.Id, zone.transform, false, 3);
+                }
+                else
+                {
+                    continue;
+                }
+                _exfiltrationObject.Add(blip);
+            }
+
+            var transits = LocationScene.GetAllObjects<TransitPoint>().ToArray();
+            foreach (var transit in transits)
+            {
+                Debug.LogError($"TRANS: {transit.Enabled} {transit.name} {transit.transform.position} {_player.Transform.position}");
+                BlipOther? blip = null;
+                blip = new BlipOther(transit.name, transit.transform, false, 4);
+                _exfiltrationObject.Add(blip);
+            }
         }
 
         private void UpdateMineList()
@@ -176,7 +222,7 @@ namespace Radar
             var zones = LocationScene.GetAllObjects<BorderZone>().ToArray();
             foreach (var zone in zones)
             {
-                Debug.LogError($"Zone type: {zone.GetType().Name}");
+                //Debug.LogError($"Zone type: {zone.GetType().Name}");
                 if (zone.GetType().Name == "Minefield")
                 {
                     FieldInfo triggerZoneSettingsField = typeof(BorderZone)
@@ -352,6 +398,9 @@ namespace Radar
 
             if (e != null && e.ChangedSetting == Radar.radarEnableMinefieldConfig)
                 UpdateMineList();
+
+            if (e != null && e.ChangedSetting == Radar.radarEnableExfilConfig)
+                UpdateExfiltrationPointList();
 
             if (e != null && e.ChangedSetting == Radar.minefieldColor)
                 RadarRegion.initColor = Radar.minefieldColor.Value;
@@ -632,38 +681,45 @@ namespace Radar
         {
             if (_player == null) return;
 
+            // Update border rotation when compass mode is disabled
             if (!Radar.radarEnableCompassConfig.Value)
-                RadarBorderTransform.eulerAngles = new Vector3(0, 0, transform.parent.transform.eulerAngles.y);
+                RadarBorderTransform.eulerAngles = new Vector3(0, 0, transform.parent.eulerAngles.y);
 
             UpdateLoot();
             UpdateRadar(UpdateActivePlayer() != -1);
 
             if (Radar.radarEnableCompassConfig.Value)
             {
-                Player.ItemHandsController? handsController = _player.HandsController as Player.ItemHandsController;
-                var compassInHand = handsController != null && handsController.CurrentCompassState;
-                if (compassInHand && !_compassOn)
-                {
-                    _compassOn = true;
-                    RadarBase.SetActive(true);
-                    SetCompassParent(true);
-                }
-                if (!compassInHand && _compassOn)
-                {
-                    _compassOn = false;
-                    RadarBase.SetActive(false);
-                    SetCompassParent(false);
-                }
+                HandleCompassMode();
+            }
+        }
 
-                if (_compassOn && _compassGlass == null)
+        private void HandleCompassMode()
+        {
+            var handsController = _player.HandsController as Player.FirearmController;
+            bool compassInHand = handsController?.CurrentCompassState ?? false;
+            // For some reason the above returns false even when compass is in hand
+            compassInHand = true;
+
+            // Toggle compass state
+
+            if (compassInHand != _compassOn)
+            {
+                _compassOn = compassInHand;
+                RadarBase.SetActive(compassInHand);
+                SetCompassParent(compassInHand);
+            }
+
+            // Attach to compass glass if needed
+            if (_compassOn && _compassGlass == null)
+            {
+                _compassGlass = GameObject.Find(COMPASS_GLASS_NAME);
+                if (_compassGlass != null && transform.parent != _compassGlass.transform)
                 {
-                    _compassGlass = GameObject.Find(COMPASS_GLASS_NAME);
-                    if (_compassGlass != null && transform.parent != _compassGlass.transform)
-                    {
-                        transform.parent = _compassGlass.transform;
-                        transform.localPosition = Vector3.zero;
-                        transform.localRotation = Quaternion.identity;
-                    }
+                    transform.SetParent(_compassGlass.transform, false);
+                    transform.localPosition = Vector3.zero;
+                    transform.localRotation = Quaternion.identity;
+                    transform.localScale = Vector3.one;
                 }
             }
         }
@@ -737,7 +793,7 @@ namespace Radar
 
         private void UpdateRadar(bool positionUpdate = true)
         {
-            Target.setPlayerPosition(_player.Transform.position);
+            Target.setPlayerTransform(_player.Transform);
             Target.setRadarRange(Radar.radarInnerRangeConfig.Value, Radar.radarOuterRangeConfig.Value);
             RadarRegion.setPlayerPosition(_player.Transform.position);
             foreach (var obj in _enemyList)
@@ -747,6 +803,9 @@ namespace Radar
                 obj.Update(false);
 
             foreach (var obj in _mineObject)
+                obj.Update(true);
+
+            foreach (var obj in _exfiltrationObject)
                 obj.Update(true);
 
             foreach (var obj in _mineRegion)

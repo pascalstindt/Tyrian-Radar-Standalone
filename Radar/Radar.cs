@@ -11,7 +11,7 @@ using System.IO;
 
 namespace Radar
 {
-    [BepInPlugin("com.leonana69.radar", "Leonana69-Radar", "1.2.1")]
+    [BepInPlugin("com.leonana69.radar", "Leonana69-Radar", "1.2.2")]
     public class Radar : BaseUnityPlugin
     {
         internal static Radar Instance { get; private set; }
@@ -21,7 +21,7 @@ namespace Radar
         const string baseSettings = "Base Settings";
         const string advancedSettings = "Advanced Settings";
         const string colorSettings = "Color Settings";
-        const string radarSettings = "Radar Settings";
+        const string radarSettings = "UI Settings";
 
         public static ConfigEntry<string> radarLanguage;
         public static ConfigEntry<bool> radarEnableConfig;
@@ -32,6 +32,7 @@ namespace Radar
         public static ConfigEntry<bool> radarEnableWishlistLootConfig;
         public static ConfigEntry<bool> radarEnableFireModeConfig;
         public static ConfigEntry<bool> radarEnableCompassConfig;
+        public static ConfigEntry<bool> radarEnableExfilConfig;
         public static ConfigEntry<bool> radarEnableMinefieldConfig;
         public static ConfigEntry<KeyboardShortcut> radarEnableShortCutConfig;
         public static ConfigEntry<KeyboardShortcut> radarEnableCorpseShortCutConfig;
@@ -85,6 +86,7 @@ namespace Radar
             radarEnableFireModeConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_fire_mode_enable"), false, Locales.GetTranslatedString("radar_fire_mode_enable_info"));
             radarEnableCompassConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_compass_enable"), false, Locales.GetTranslatedString("radar_compass_enable_info"));
             radarEnableMinefieldConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_minefield_enable"), false, Locales.GetTranslatedString("radar_minefield_enable_info"));
+            radarEnableExfilConfig = Config.Bind(baseSettings, Locales.GetTranslatedString("radar_exfil_enable"), false, Locales.GetTranslatedString("radar_exfil_enable_info"));
 
             radarEnableCorpseConfig = Config.Bind(advancedSettings, Locales.GetTranslatedString("radar_corpse_enable"), false);
             radarEnableCorpseTypeConfig = Config.Bind(advancedSettings, Locales.GetTranslatedString("radar_corpse_type_enable"), false);
