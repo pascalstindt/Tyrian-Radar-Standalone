@@ -270,7 +270,7 @@ namespace Radar
             {
                 UpdateBlipImage(blipColor);
                 //UpdateAlpha();
-                UpdatePosition(true, true, false);
+                UpdatePosition(true, true, _type == 3 || _type == 4);
             }
         }
     }
