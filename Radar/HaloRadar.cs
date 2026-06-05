@@ -165,13 +165,32 @@ namespace Radar
                 return;
             }
 
-            var zones = LocationScene.GetAllObjects<ExfiltrationPoint>().ToArray();
+            var zones = _player.Side == EPlayerSide.Savage
+                ? _gameWorld.ExfiltrationController.ScavExfiltrationPoints
+                : _gameWorld.ExfiltrationController.ExfiltrationPoints;
             foreach (var zone in zones)
             {
                 Debug.LogError($"EXFIL: {zone.Status} {zone.Settings.Name} {zone.InfiltrationMatch(_player)} {zone.transform.position} {_player.Transform.position}");
                 BlipOther? blip = null;
                 if (zone.InfiltrationMatch(_player))
                 {
+                    var requirements = zone.Requirements != null
+                        ? string.Join("|", zone.Requirements.Select(req => req.Requirement.ToString()))
+                        : "null";
+
+                    BepInEx.Logging.Logger.CreateLogSource("Leonana69-Radar").LogInfo(
+                        $"EXFIL_DRAW: name={zone.Settings.Name}, id={zone.Id}, status={zone.Status}, " +
+                        $"requirements=[{requirements}], distance={Vector3.Distance(zone.transform.position, _player.Transform.position)}"
+                    );
+
+                    bool isCoopExfil = zone.Requirements != null &&
+                        zone.Requirements.Any(req => req.Requirement.ToString() == "ScavCooperation");
+
+                    if (isCoopExfil)
+                    {
+                        continue;
+                    }
+
                     blip = new BlipOther(zone.Id, zone.transform, false, 3);
                 }
                 else
