@@ -59,22 +59,23 @@ namespace Radar
             if (_isDead)
             {
                 targetBlips = AssetFileManager.DeadEnemyBlips;
-                if (outline == null && Radar.radarEnableCorpseTypeConfig.Value)
-                {
-                    outline = blipImage.GetOrAddComponent<Outline>();
-                    outline.effectDistance = new Vector2(1, -1);
-                } else if (outline != null && !Radar.radarEnableCorpseTypeConfig.Value)
+
+                if (outline != null)
                 {
                     Object.Destroy(outline);
                     outline = null;
                 }
 
-                if (outline != null)
+                if (Radar.radarEnableCorpseTypeConfig.Value)
                 {
-                    outline.effectColor = blipImage.color;
+                    Color corpseTypeColor = blipImage.color;
+                    corpseTypeColor.a = 0.55f;
+                    blipImage.color = corpseTypeColor;
                 }
-                
-                blipImage.color = Radar.corpseBlipColor.Value;
+                else
+                {
+                    blipImage.color = Radar.corpseBlipColor.Value;
+                }
             }
 
             if (blipPosition.y > totalThreshold)
@@ -188,9 +189,9 @@ namespace Radar
                 // Mine
                 targetBlips = AssetFileManager.MineBlips;
             }
-            else if (_type == 3 || _type == 4)
+            else if (_type == 3 || _type == 4 || _type == 5)
             {
-                // Exfiltraction
+                // Exfiltraction / transit / requirement exfil
                 targetBlips = AssetFileManager.ExfiltractionBlips;
             }
 
@@ -234,6 +235,11 @@ namespace Radar
                         localScale = 2.0f;
                         break;
 
+                    case 5:
+                        blipImage.color = new Color(1.0f, 0.2f, 0.2f);
+                        localScale = 2.0f;
+                        break;                        
+
                     default:
                         blipImage.color = Radar.lootBlipColor.Value;
                         break;
@@ -259,7 +265,7 @@ namespace Radar
             var distance = blipPosition.x * blipPosition.x + blipPosition.z * blipPosition.z;
             _show = !(distance > radarOuterRange * radarOuterRange || distance < radarInnerRange * radarInnerRange)
                     // or it's exfiltraction and transit
-                    || _type == 3 || _type == 4;
+                    || _type == 3 || _type == 4 || _type == 5;
             
             if (!_show)
             {
@@ -270,7 +276,7 @@ namespace Radar
             {
                 UpdateBlipImage(blipColor);
                 //UpdateAlpha();
-                UpdatePosition(true, true, _type == 3 || _type == 4);
+                UpdatePosition(true, true, _type == 3 || _type == 4 || _type == 5);
             }
         }
     }

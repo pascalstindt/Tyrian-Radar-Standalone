@@ -142,7 +142,7 @@ namespace Radar
             else
                 InitNormalRadar();
 
-            if (Radar.radarEnableLootConfig.Value)
+            if (Radar.radarEnableLootConfig.Value && TraderClassExtensions.IsInit)
                 UpdateLootList();
 
             UpdateMineList();
@@ -191,7 +191,11 @@ namespace Radar
                         continue;
                     }
 
-                    blip = new BlipOther(zone.Id, zone.transform, false, 3);
+                    bool hasRequirements = zone.Requirements != null && zone.Requirements.Any();
+
+                    int blipType = hasRequirements ? 5 : 3;
+
+                    blip = new BlipOther(zone.Id, zone.transform, false, blipType);
                 }
                 else
                 {
@@ -350,11 +354,26 @@ namespace Radar
         {
             if (debugInfo)
                 Debug.LogError("# OnEnable");
-
+           
             InitRadar();
+            StartCoroutine(WaitForPriceInitThenUpdateLootList());
+
             Radar.Instance.Config.SettingChanged += UpdateRadarSettings;
             UpdateRadarSettings();
             inGame = true;
+        }
+
+        private IEnumerator WaitForPriceInitThenUpdateLootList()
+        {
+            while (!TraderClassExtensions.IsInit)
+            {
+                yield return null;
+            }
+
+            if (Radar.radarEnableLootConfig.Value)
+            {
+                UpdateLootList();
+            }
         }
 
         private void OnDisable()
